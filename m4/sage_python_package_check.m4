@@ -7,9 +7,9 @@
 #
 #   Determine if the system copy of a python package can be used by sage.
 #
-#   This macro uses setuptools.version's pkg_resources to check that the
-#   "version_requirements.txt" file (or entry in "pyproject.toml") for
-#   the named package is satisfied, and it can typically fail in four ways:
+#   This macro uses importlib.metadata and packaging.requirements to check
+#   that the "version_requirements.txt" file (or entry in "pyproject.toml")
+#   for the named package is satisfied, and it can typically fail in four ways:
 #
 #     1. If --enable-system-site-packages was not passed to ./configure,
 #
@@ -17,7 +17,7 @@
 #
 #     3. If we are unable to create a venv with the system python,
 #
-#     4. If setuptools is not available to the system python,
+#     4. If packaging is not available to the system python,
 #
 #     5. If the contents of version_requirements.txt (or entry in
 #        "pyproject.toml") are not met (wrong version, no version,
@@ -66,8 +66,10 @@ AC_DEFUN([SAGE_PYTHON_PACKAGE_CHECK], [
       WITH_SAGE_PYTHONUSERBASE([dnl
         AS_IF(
           [config.venv/bin/python3 -c dnl
-             "import pkg_resources; dnl
-              pkg_resources.require((${SAGE_PKG_VERSPEC}))" dnl
+             "import sys, importlib.metadata as im; dnl
+              from packaging.requirements import Requirement; dnl
+              any(im.version(r.name) not in r.specifier dnl
+                  for r in map(Requirement, (${SAGE_PKG_VERSPEC}))) and sys.exit(1)" dnl
            2>&AS_MESSAGE_LOG_FD],
           [AC_MSG_RESULT(yes)],
           [AC_MSG_RESULT(no); sage_spkg_install_$1=yes]
