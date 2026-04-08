@@ -2171,7 +2171,18 @@ class Graphics(WithEqualityById, SageObject):
             sage: P.show(figsize=[sqrt(2),sqrt(3)])
         """
         from sage.repl.rich_output import get_display_manager
+        from sage.repl.rich_output.output_graphics import OutputImagePng
+        from sage.repl.ipython_extension import _running_in_notebook
         dm = get_display_manager()
+        if (OutputImagePng not in dm._backend.supported_output()
+                and dm.preferences.graphics != 'disable'):
+            try:
+                if _running_in_notebook():
+                    from IPython.display import display, Image
+                    display(Image(self._render_png_(**kwds)))
+                    return
+            except Exception:
+                pass
         dm.display_immediately(self, **kwds)
 
     def xmin(self, xmin=None):
